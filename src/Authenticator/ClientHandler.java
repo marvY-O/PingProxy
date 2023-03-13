@@ -28,10 +28,10 @@ public class ClientHandler implements Runnable {
                 @Override
                 public void run() {
 
-                	while (true) {
+                	while (!Thread.currentThread().isInterrupted()) {
                 			Packet p;
                 			if (s.isClosed()) {
-                				buffer.remove(s.getInetAddress());
+                				if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
                 				try {
 	                				s.close();
 	                				oos.close();
@@ -39,7 +39,8 @@ public class ClientHandler implements Runnable {
                 				} catch(IOException e) {
                 					e.printStackTrace();
                 				}
-                				return;
+                				Thread.currentThread().interrupt();
+                				continue;
                 			}
 							try {
 								p = (Packet) ois.readObject();
@@ -90,6 +91,18 @@ public class ClientHandler implements Runnable {
                 public void run() {
 
                 	while (true) {
+                		if (s.isClosed()) {
+            				if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
+            				try {
+                				s.close();
+                				oos.close();
+                				ois.close();
+            				} catch(IOException e) {
+            					e.printStackTrace();
+            				}
+            				Thread.currentThread().interrupt();
+            				continue;
+            			}
                 		if (buffer.get(s.getInetAddress()).size() == 0) continue;
                 		Packet curPacket;
                 		synchronized (buffer) {
