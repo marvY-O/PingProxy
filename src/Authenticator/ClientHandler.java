@@ -31,7 +31,9 @@ public class ClientHandler implements Runnable {
                 	while (!Thread.currentThread().isInterrupted()) {
                 			Packet p;
                 			if (s.isClosed()) {
-                				if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
+                				synchronized(buffer) {
+                					if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
+                				}
                 				try {
 	                				s.close();
 	                				oos.close();
@@ -52,7 +54,9 @@ public class ClientHandler implements Runnable {
 									p.clientIP = p.destinationIP;
 									p.destinationIP = a;
 									p.type = "NO";
-									buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+									synchronized(buffer) {
+										buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+									}
 									continue;
 								}  
 								
@@ -61,7 +65,9 @@ public class ClientHandler implements Runnable {
 									p.clientIP = p.destinationIP;
 									p.destinationIP = a;
 									p.type = "YES";
-									buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+									synchronized(buffer) {
+										buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+									}
 								}
 								else {
 									synchronized (buffer) {
@@ -76,6 +82,11 @@ public class ClientHandler implements Runnable {
 										}
 									}
 								}
+							} catch (EOFException e) {
+								synchronized(buffer) {
+                					if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
+                				}
+								Thread.currentThread().interrupt();
 							} catch (ClassNotFoundException e) {
 								e.printStackTrace();
 							} catch (IOException e) {
@@ -90,7 +101,7 @@ public class ClientHandler implements Runnable {
                 @Override
                 public void run() {
 
-                	while (true) {
+                	while (!Thread.currentThread().isInterrupted()) {
                 		if (s.isClosed()) {
             				if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
             				try {

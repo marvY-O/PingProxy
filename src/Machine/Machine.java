@@ -34,6 +34,17 @@ public class Machine {
             	public void run() {
             		while (true) {
             			Packet p;
+            			if (s.isClosed()) {
+            				try {
+                				s.close();
+                				oos.close();
+                				ois.close();
+            				} catch(IOException e) {
+            					e.printStackTrace();
+            				}
+            				Thread.currentThread().interrupt();
+            				continue;
+            			}
             			try {
             				p = (Packet) ois.readObject();
             				if (p.type.equals("PING")) {
