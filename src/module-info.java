@@ -1,0 +1,9 @@
+/**
+ * 
+ */
+/**
+ * @author marvy
+ *
+ */
+module pingProxy {
+}
