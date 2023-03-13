@@ -29,14 +29,14 @@ public class Machine {
             ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
             System.out.printf("Connected to server %s:%d\n", ac_address, ac_port);
             
-            Runnable replier = new Runnable() {
+            Runnable reply = new Runnable() {
             	@Override
             	public void run() {
             		while (true) {
             			Packet p;
             			try {
             				p = (Packet) ois.readObject();
-            				if (p.type == "PING") {
+            				if (p.type.equals("PING")) {
             					Packet reply = new Packet();
             					reply.clientIP = clientIP;
             					reply.destinationIP = p.clientIP;
@@ -58,12 +58,16 @@ public class Machine {
             	}
             };
             
+            Thread replier = new Thread(reply);
+            replier.start();
+            
             while (true) {
 	            System.out.printf("Enter IP to ping: ");
 	            String destIP = sc.next();
-	            int noPackets = 5;
-	            
-	            Runnable send = new Runnable() {
+	            int noPackets = 10;
+
+
+	            Runnable send = new Runnable () {
 	            	@Override
 	            	public void run() {
 	            		for (int i=0; i<noPackets; i++) {
@@ -72,38 +76,51 @@ public class Machine {
 	        	            p.destinationIP = destIP;
 	        	            p.type = "PING";
 	        	            p.timestamp = System.currentTimeMillis();
-	        	            oos.writeObject(p);
+	        	            try{
+	        	            	oos.writeObject(p);
+	        	            	Thread.sleep(50);
+	        	            } catch(IOException e) {
+	        	            	e.printStackTrace();
+	        	            } catch(InterruptedException e) {
+	        	            	e.printStackTrace();
+	        	            }
+	        	            
 	            		}
-	            	}
-	            };
-
-	            Runnable recieve = new Runnable () {
-	            	@Override
-	            	public void run() {
-			            int cntPackets = 0;
-			            while (true) {
-			            	
-			            	if (cntPackets == noPackets) break;
-					        if (buffer.isEmpty()) continue;
-					        else {
-					        	Packet pRec = buffer.poll();
-					        	int pSize = 64;
-					        	if (pRec.type == "YES") {
-					        		System.out.printf("Recvd %d bytes from %s time=%lms\n", pSize, pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
-					        	}
-					        	else if (pRec.type == "UNREACHABLE") {
-					        		System.out.printf("%s is unreachable\n", pRec.clientIP);
-					        	}
-					        	cntPackets++;
-					        }
-			            }
+	    	            
 	            	}
 	            };
 	            
+
 	            Thread sender = new Thread(send);
-	            Thread reciever = new Thread(recieve);
 	            sender.start();
-	            reciever.start();
+	            
+	            
+	            int cntPackets = 0;
+	            while (true) {
+	            	
+	            	if (cntPackets == noPackets) break;
+	            	
+	            	synchronized(buffer) {
+	            		if (buffer.isEmpty()) continue;
+	            	}
+	            	Packet pRec;
+	            	synchronized(buffer) {
+	            		pRec = buffer.poll();
+	            	}
+	            	
+		        	int pSize = 64;
+		        	if (pRec.type.equals("YES")) {
+		        		System.out.printf("Recvd %d bytes from %s time=%dms\n", pSize, pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
+		        	}
+		        	else if (pRec.type.equals("NO")) {
+		        		System.out.printf("%s is unreachable\n", pRec.clientIP);
+		        	}
+		        	else {
+		        		System.out.printf("Unknown %s\n", pRec.type);
+		        	}
+		        	cntPackets++;
+			        
+	            }
 		            
 	       }
             

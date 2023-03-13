@@ -29,7 +29,7 @@ public class Authenticator {
                 	buffer.put(s.getInetAddress(), new LinkedList<Packet>());
                 }
                 
-                ClientHandler clientNew = new ClientHandler(s, buffer);
+                ClientHandler clientNew = new ClientHandler(s, buffer, serverIP);
                 
                 Thread t = new Thread(clientNew);
                 t.start();                  
