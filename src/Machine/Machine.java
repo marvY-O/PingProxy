@@ -1,5 +1,8 @@
 package Machine;
 import java.io.*;  
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import  java.lang.*;
 import java.util.*;
 import java.net.*; 
@@ -19,6 +22,14 @@ public class Machine {
         this.receiveBuffer = new LinkedList<Packet>();
     }
     
+    public static int getSerializedSize(Object obj) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(obj);
+        oos.flush();
+        return baos.size();
+    }
+    
 	public void initiate() {
 		Scanner sc = new Scanner(System.in);
         try{
@@ -32,7 +43,7 @@ public class Machine {
             Runnable reply = new Runnable() {
             	@Override
             	public void run() {
-            		while (true) {
+            		while (!Thread.currentThread().isInterrupted()) {
             			Packet p;
             			if (s.isClosed()) {
             				try {
@@ -60,6 +71,9 @@ public class Machine {
             						buffer.add(p);
             					}
             				}
+            			} catch(EOFException e) {
+            				System.out.printf("\nServer Disconnected!! Retry again..\n");
+            				Thread.currentThread().interrupt();
             			} catch(IOException e) {
                         	e.printStackTrace();
                         } catch(ClassNotFoundException e) {
@@ -81,6 +95,7 @@ public class Machine {
 	            Runnable send = new Runnable () {
 	            	@Override
 	            	public void run() {
+	            		if (s.isClosed()) return;
 	            		for (int i=0; i<noPackets; i++) {
 	            			Packet p = new Packet();
 	        	            p.clientIP = clientIP;
@@ -90,7 +105,10 @@ public class Machine {
 	        	            try{
 	        	            	oos.writeObject(p);
 	        	            	Thread.sleep(50);
-	        	            } catch(IOException e) {
+	        	            } catch(SocketException e) {
+	        	            	System.out.printf("\nError reaching Server!!\n");
+	        	            	return;
+	            			}catch(IOException e) {
 	        	            	e.printStackTrace();
 	        	            } catch(InterruptedException e) {
 	        	            	e.printStackTrace();
@@ -104,13 +122,16 @@ public class Machine {
 
 	            Thread sender = new Thread(send);
 	            sender.start();
-	            
+	            long curTime = System.currentTimeMillis();
 	            
 	            int cntPackets = 0;
 	            while (true) {
 	            	
 	            	if (cntPackets == noPackets) break;
-	            	
+	            	if (System.currentTimeMillis() - curTime > 5000) {
+	            		System.out.printf("\nRequest Timed Out.\n");
+	            		break;
+	            	}
 	            	synchronized(buffer) {
 	            		if (buffer.isEmpty()) continue;
 	            	}
@@ -121,7 +142,7 @@ public class Machine {
 	            	
 		        	int pSize = 64;
 		        	if (pRec.type.equals("YES")) {
-		        		System.out.printf("Recvd %d bytes from %s time=%dms\n", pSize, pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
+		        		System.out.printf("Recvd %d bytes from %s time=%dms\n", getSerializedSize(pRec), pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
 		        	}
 		        	else if (pRec.type.equals("NO")) {
 		        		System.out.printf("%s is unreachable\n", pRec.clientIP);
