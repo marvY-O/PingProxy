@@ -46,7 +46,9 @@ public class ClientHandler implements Runnable {
                 			}
 							try {
 								p = (Packet) ois.readObject();
-								InetAddress destAddr;
+								InetAddress destAddr, clientAddr;
+								clientAddr = InetAddress.getByName(p.clientIP);
+
 								try {
 									destAddr = InetAddress.getByName(p.destinationIP);
 								} catch (UnknownHostException e) {
@@ -54,8 +56,9 @@ public class ClientHandler implements Runnable {
 									p.clientIP = p.destinationIP;
 									p.destinationIP = a;
 									p.type = "NO";
+									System.out.println("unknown host");
 									synchronized(buffer) {
-										buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+										buffer.get(clientAddr).add(p);
 									}
 									continue;
 								}  
@@ -65,8 +68,9 @@ public class ClientHandler implements Runnable {
 									p.clientIP = p.destinationIP;
 									p.destinationIP = a;
 									p.type = "YES";
+									System.out.println("same as server");
 									synchronized(buffer) {
-										buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+										buffer.get(clientAddr).add(p);
 									}
 								}
 								else {
@@ -74,15 +78,15 @@ public class ClientHandler implements Runnable {
 									p.clientIP = p.destinationIP;
 									p.destinationIP = a;
 									synchronized (buffer) {
-										if (buffer.containsKey(destAddr)) {
+										if (buffer.containsKey(clientAddr)) {
 											p.type = "YES";
-											buffer.get(destAddr).add(p);
+											buffer.get(clientAddr).add(p);
 											continue;
 										}
 									}
 									p.type = "NO";
 									synchronized (buffer) {
-										buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+										buffer.get(clientAddr).add(p);
 									}
 									
 								}
