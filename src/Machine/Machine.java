@@ -60,7 +60,7 @@ public class Machine {
             				p = (Packet) ois.readObject();
             				if (p.type.equals("PING")) {
             					Packet reply = new Packet();
-            					reply.clientIP = clientIP;
+            					reply.clientIP = p.destinationIP;
             					reply.destinationIP = p.clientIP;
             					reply.type="YES";
             					reply.timestamp = p.timestamp;

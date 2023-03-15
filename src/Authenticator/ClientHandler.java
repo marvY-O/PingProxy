@@ -60,7 +60,7 @@ public class ClientHandler implements Runnable {
 									continue;
 								}  
 								
-								if (destAddr.equals(serverIP)) {
+								if (p.destinationIP.equals(serverIP)) {
 									String a = p.clientIP;
 									p.clientIP = p.destinationIP;
 									p.destinationIP = a;
@@ -70,17 +70,21 @@ public class ClientHandler implements Runnable {
 									}
 								}
 								else {
+									String a = p.clientIP;
+									p.clientIP = p.destinationIP;
+									p.destinationIP = a;
 									synchronized (buffer) {
 										if (buffer.containsKey(destAddr)) {
+											p.type = "YES";
 											buffer.get(destAddr).add(p);
-										}else {
-											String a = p.clientIP;
-											p.clientIP = p.destinationIP;
-											p.destinationIP = a;
-											p.type = "NO";
-											buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+											continue;
 										}
 									}
+									p.type = "NO";
+									synchronized (buffer) {
+										buffer.get(InetAddress.getByName(p.destinationIP)).add(p);
+									}
+									
 								}
 							} catch (StreamCorruptedException e) {
 								return;
