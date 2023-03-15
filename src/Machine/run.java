@@ -1,10 +1,7 @@
 package Machine;
-import java.io.IOException;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
-import java.util.Scanner;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 public class run {
     public static void main (String args[]) throws IOException{
@@ -12,19 +9,21 @@ public class run {
     	String clientIP = "127.0.0.1";
         
         try {
-            Enumeration<NetworkInterface> networkInterfaceEnumeration = NetworkInterface.getNetworkInterfaces();
-            while( networkInterfaceEnumeration.hasMoreElements()){
-                for ( InterfaceAddress interfaceAddress : networkInterfaceEnumeration.nextElement().getInterfaceAddresses()) {
-                    if ( interfaceAddress.getAddress().isSiteLocalAddress()) {
-                        String cur = interfaceAddress.getAddress().getHostAddress();
-                        if (cur.substring(0, 3).equals("192")) {
-                        	clientIP = cur;
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                if (iface.isUp() && iface.getName().startsWith("w")) { // filter by WiFi interfaces
+                    Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress addr = addresses.nextElement();
+                        if (addr.getAddress().length == 4) { // filter IPv4 addresses
+                            clientIP = addr.getHostAddress();
                         }
                     }
                 }
             }
         } catch (SocketException e) {
-            e.printStackTrace();
+            System.out.println("Error getting network interfaces: " + e.getMessage());
         }
         
     	Scanner sc = new Scanner(System.in);
