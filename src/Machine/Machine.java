@@ -31,6 +31,7 @@ public class Machine {
     }
     
 	public void initiate() {
+		
 		Scanner sc = new Scanner(System.in);
         try{
 
@@ -64,6 +65,7 @@ public class Machine {
             					reply.destinationIP = p.clientIP;
             					reply.type="YES";
             					reply.timestamp = p.timestamp;
+            					reply.pktID = p.pktID;
             					oos.writeObject(reply);
             				}
             				else {
@@ -102,9 +104,10 @@ public class Machine {
 	        	            p.destinationIP = destIP;
 	        	            p.type = "PING";
 	        	            p.timestamp = System.currentTimeMillis();
+	        	            p.pktID = i;
 	        	            try{
 	        	            	oos.writeObject(p);
-	        	            	Thread.sleep(50);
+	        	            	Thread.sleep(500);
 	        	            } catch(SocketException e) {
 	        	            	System.out.printf("\nError reaching Server!!\n");
 	        	            	return;
@@ -122,9 +125,8 @@ public class Machine {
 
 	            Thread sender = new Thread(send);
 	            sender.start();
-	            long curTime = System.currentTimeMillis();
-	            
-	            int cntPackets = 0;
+	            // = System.currentTimeMillis();
+	            /*
 	            while (true) {
 	            	
 	            	if (cntPackets == noPackets) break;
@@ -139,8 +141,7 @@ public class Machine {
 	            	synchronized(buffer) {
 	            		pRec = buffer.poll();
 	            	}
-	            	
-		        	int pSize = 64;
+
 		        	if (pRec.type.equals("YES")) {
 		        		System.out.printf("Recvd %d bytes from %s time=%dms\n", getSerializedSize(pRec), pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
 		        	}
@@ -153,7 +154,46 @@ public class Machine {
 		        	cntPackets++;
 			        
 	            }
-		            
+	            */
+	            int recvd = 0;
+	            long startTime = System.currentTimeMillis();
+	            for (int i=0; i<noPackets; i++) {
+	            	long curTime = System.currentTimeMillis();
+	            	while (true) {
+	            		synchronized(buffer) {
+	            			if (System.currentTimeMillis() - curTime > 2000) {
+	            				System.out.println("Timed Out");
+	            				break;
+	            			}
+		            		if (buffer.isEmpty()) continue;
+		            		else {
+		            			while (!buffer.isEmpty() && buffer.peek().pktID != i) buffer.poll();
+		            			break;
+		            		}
+		            	}
+	            	}
+	            	synchronized(buffer) {
+	            		if (buffer.isEmpty()) continue;
+	            	}
+	            	Packet pRec;
+	            	synchronized(buffer) {
+	            		pRec = buffer.poll();
+	            	}
+	            	if (pRec.type.equals("YES")) {
+		        		System.out.printf("Recvd %d bytes from %s time=%dms\n", getSerializedSize(pRec), pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
+						recvd++;
+					}
+		        	else if (pRec.type.equals("NO")) {
+		        		System.out.printf("%s is unreachable\n", pRec.clientIP);
+		        	}
+		        	else {
+		        		System.out.printf("Unknown %s\n", pRec.type);
+		        	}
+		        	
+
+	            }
+	            
+	            System.out.printf("\n%d packets transmitted, %d received, %.2f%% packet loss, time %dms\n", noPackets, recvd, (float)(noPackets - recvd)*100/noPackets, System.currentTimeMillis() - startTime);
 	       }
             
             

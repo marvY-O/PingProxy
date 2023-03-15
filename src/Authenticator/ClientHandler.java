@@ -82,6 +82,8 @@ public class ClientHandler implements Runnable {
 										}
 									}
 								}
+							} catch (StreamCorruptedException e) {
+								return;
 							} catch (EOFException e) {
 								synchronized(buffer) {
                 					if (buffer.containsKey(s.getInetAddress())) buffer.remove(s.getInetAddress());
