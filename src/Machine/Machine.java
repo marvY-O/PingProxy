@@ -3,7 +3,6 @@ import java.io.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import  java.lang.*;
 import java.util.*;
 import java.net.*; 
 import Message.*; 
@@ -125,36 +124,7 @@ public class Machine {
 
 	            Thread sender = new Thread(send);
 	            sender.start();
-	            // = System.currentTimeMillis();
-	            /*
-	            while (true) {
-	            	
-	            	if (cntPackets == noPackets) break;
-	            	if (System.currentTimeMillis() - curTime > 5000) {
-	            		System.out.printf("\nRequest Timed Out.\n");
-	            		break;
-	            	}
-	            	synchronized(buffer) {
-	            		if (buffer.isEmpty()) continue;
-	            	}
-	            	Packet pRec;
-	            	synchronized(buffer) {
-	            		pRec = buffer.poll();
-	            	}
 
-		        	if (pRec.type.equals("YES")) {
-		        		System.out.printf("Recvd %d bytes from %s time=%dms\n", getSerializedSize(pRec), pRec.clientIP, System.currentTimeMillis()-pRec.timestamp);
-		        	}
-		        	else if (pRec.type.equals("NO")) {
-		        		System.out.printf("%s is unreachable\n", pRec.clientIP);
-		        	}
-		        	else {
-		        		System.out.printf("Unknown %s\n", pRec.type);
-		        	}
-		        	cntPackets++;
-			        
-	            }
-	            */
 	            int recvd = 0;
 	            long startTime = System.currentTimeMillis();
 	            for (int i=0; i<noPackets; i++) {
